@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FluXTape Interaction Event Schema",
+  "description": "Schema for all interaction events captured by the participatory version system. Each participant session produces one JSON file containing a list of events in this format.",
+  "version": "1.0.0",
+
+  "session_envelope": {
+    "description": "The top-level object written to storage at session close.",
+    "fields": {
+      "session_id":     "UUID string — unique per session",
+      "participant_id": "Anonymised participant identifier (hashed before storage)",
+      "song_id":        "Identifier for the song being listened to",
+      "event_count":    "Total number of events in this session",
+      "events":         "Ordered array of Event objects (see below)"
+    }
+  },
+
+  "event_types": {
+    "session_start": {
+      "description": "Fired when a participant begins a listening session.",
+      "fields": {
+        "listening_mode": "passive | active"
+      }
+    },
+    "play": {
+      "description": "Fired when playback begins or resumes."
+    },
+    "pause": {
+      "description": "Fired when the listener pauses playback."
+    },
+    "seek": {
+      "description": "Fired when the listener navigates to a different position in the track.",
+      "fields": {
+        "playback_pos_s": "Position seeked to, in seconds"
+      }
+    },
+    "feature_switch": {
+      "description": "THE PRIMARY EVENT. Fired every time a listener changes a musical dimension. This is the core behavioural data for preference analysis.",
+      "fields": {
+        "dimension":      "Which parameter was changed: lyrics | groove | solo | spatial | backing_vocals",
+        "prev_value":     "The value before the switch (e.g. 'A', 'narrow', 'off')",
+        "new_value":      "The value after the switch",
+        "playback_pos_s": "Track position at the moment of switch (seconds)"
+      }
+    },
+    "skip": {
+      "description": "Fired when the listener exits a version before completion (defined as < 30 s of playback in study protocol).",
+      "fields": {
+        "skip_at_s":      "How far into the track playback reached before skip"
+      }
+    },
+    "complete": {
+      "description": "Fired when a version plays to its end without interruption."
+    },
+    "save": {
+      "description": "Fired when a listener bookmarks a version.",
+      "fields": {
+        "during_playback": "Boolean — true if saved while track was playing"
+      }
+    },
+    "rating": {
+      "description": "Fired when a listener submits a post-listening scale rating.",
+      "fields": {
+        "scale": "Name of the rating scale: enjoyment | emotional_intensity | coherence | preference_rank",
+        "value": "Numeric response value"
+      }
+    },
+    "session_end": {
+      "description": "Fired at session close. Includes the final configuration snapshot and total switch count — the primary summary record.",
+      "fields": {
+        "final_config":   "Dict of {dimension: value} at close — the configuration the listener settled on",
+        "total_switches": "Total number of feature_switch events in the session"
+      }
+    }
+  },
+
+  "dimensions": {
+    "lyrics":        ["A", "B", "C"],
+    "groove":        ["A", "B", "C"],
+    "solo":          ["A", "B", "C"],
+    "spatial":       ["narrow", "wide"],
+    "backing_vocals": ["on", "off"]
+  },
+
+  "derived_variables": {
+    "description": "Variables computed from raw events for statistical analysis. See SessionLogger.derive_summary().",
+    "variables": {
+      "n_switches_total":    "Total feature_switch events across all dimensions",
+      "n_switches_by_dim":   "Per-dimension switch counts (dict)",
+      "first_dim_touched":   "The first dimension the listener interacted with",
+      "settled_config":      "Final configuration at session close",
+      "n_skips":             "Number of skip events",
+      "time_in_config_s":    "Approximate seconds spent in each configuration (dict)"
+    }
+  }
+}
